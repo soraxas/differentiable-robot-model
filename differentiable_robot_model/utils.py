@@ -21,8 +21,12 @@ prod = lambda l: reduce(operator.mul, l, 1)
 def cross_product(vec3a, vec3b):
     vec3a = convert_into_at_least_2d_pytorch_tensor(vec3a)
     vec3b = convert_into_at_least_2d_pytorch_tensor(vec3b)
-    skew_symm_mat_a = vector3_to_skew_symm_matrix(vec3a)
-    return (skew_symm_mat_a @ vec3b.unsqueeze(2)).squeeze(2)
+    return torch.cross(vec3a, vec3b)
+    # skew_symm_mat_a = vector3_to_skew_symm_matrix(vec3a)
+    # assert torch.isclose(torch.cross(vec3a, vec3b), (skew_symm_mat_a @ vec3b.unsqueeze(
+    #     2)).squeeze(2)).all(), (torch.cross(vec3a, vec3b), (skew_symm_mat_a @ vec3b.unsqueeze(
+    #     2)).squeeze(2))
+    # return (skew_symm_mat_a @ vec3b.unsqueeze(2)).squeeze(2)
 
 
 def bfill_lowertriangle(A: torch.Tensor, vec: torch.Tensor):
@@ -39,15 +43,34 @@ def bfill_diagonal(A: torch.Tensor, vec: torch.Tensor):
 
 def vector3_to_skew_symm_matrix(vec3):
     vec3 = convert_into_at_least_2d_pytorch_tensor(vec3)
-    batch_size = vec3.shape[0]
-    skew_symm_mat = vec3.new_zeros((batch_size, 3, 3))
-    skew_symm_mat[:, 0, 1] = -vec3[:, 2]
-    skew_symm_mat[:, 0, 2] = vec3[:, 1]
-    skew_symm_mat[:, 1, 0] = vec3[:, 2]
-    skew_symm_mat[:, 1, 2] = -vec3[:, 0]
-    skew_symm_mat[:, 2, 0] = -vec3[:, 1]
-    skew_symm_mat[:, 2, 1] = vec3[:, 0]
-    return skew_symm_mat
+
+    W_row0 = torch.tensor(
+        [[0, 0, 0], [0, 0, -1], [0, 1, 0]], dtype=vec3.dtype, device=vec3.device
+    )
+    W_row1 = torch.tensor(
+        [[0, 0, 1], [0, 0, 0], [-1, 0, 0]], dtype=vec3.dtype, device=vec3.device
+    )
+    W_row2 = torch.tensor(
+        [[0, -1, 0], [1, 0, 0], [0, 0, 0]], dtype=vec3.dtype, device=vec3.device
+    )
+    return torch.stack(
+        [
+            torch.matmul(vec3, W_row0),
+            torch.matmul(vec3, W_row1),
+            torch.matmul(vec3, W_row2),
+        ],
+        dim=-1,
+    )
+
+    # batch_size = vec3.shape[0]
+    # skew_symm_mat = vec3.new_zeros((batch_size, 3, 3))
+    # skew_symm_mat[:, 0, 1] = -vec3[:, 2]
+    # skew_symm_mat[:, 0, 2] = vec3[:, 1]
+    # skew_symm_mat[:, 1, 0] = vec3[:, 2]
+    # skew_symm_mat[:, 1, 2] = -vec3[:, 0]
+    # skew_symm_mat[:, 2, 0] = -vec3[:, 1]
+    # skew_symm_mat[:, 2, 1] = vec3[:, 0]
+    # return skew_symm_mat
 
 
 def torch_square(x):
