@@ -112,6 +112,7 @@ class CoordinateTransform(object):
         M[:, :3, 3] = self._trans
         M[:, 3, 3] = 1
         q = torch.empty((batch_size, 4)).to(self._rot.device)
+        q = torch.zeros((batch_size, 4)).to(self._rot.device)
         t = torch.einsum("bii->b", M)  # torch.trace(M)
         for n in range(batch_size):
             tn = t[n]
@@ -133,7 +134,85 @@ class CoordinateTransform(object):
                 q[n, 3] = M[n, k, j] - M[n, j, k]
                 # q = q[[3, 0, 1, 2]]
             q[n, :] *= 0.5 / math.sqrt(tn * M[n, 3, 3])
+
+
+        q2 = torch.empty((batch_size, 4)).to(self._rot.device)
+        q2 = torch.zeros((batch_size, 4)).to(self._rot.device)
+
+        boolean_map = t > M[:, 3, 3]
+        inv_boolean_map = ~boolean_map
+
+        q2[boolean_map, 3] = t[boolean_map]
+        q2[boolean_map, 2] = M[boolean_map, 1, 0] - M[boolean_map, 0, 1]
+        q2[boolean_map, 1] = M[boolean_map, 0, 2] - M[boolean_map, 2, 0]
+        q2[boolean_map, 0] = M[boolean_map, 2, 1] - M[boolean_map, 1, 2]
+
+        def get_gathered_view(M, A, B):
+            """
+            Given
+                - M with size [B x n x n]
+                - A with size [B] (where its indices of M dim 1)
+                - B with size [B] (where its indices of M dim 2)
+            Returns
+                a view of M with size [B] by indexing M
+                with A as index of dim=1, B as index of dim=2 at each Batch
+            """
+            _A = A.view(-1,1).repeat(1, M.shape[2]).view(-1, 1, M.shape[2])
+            _M = M.gather(1, _A).squeeze(1)
+            _B = B.view(-1, 1)
+            _M = _M.gather(1, _B).squeeze(1)
+            return _M
+
+
+        _q2 = q2[inv_boolean_map]
+        if _q2.shape[0] > 0:
+            _i = torch.empty((batch_size), dtype=torch.long).to(self._rot.device)
+            _j = torch.empty((batch_size), dtype=torch.long).to(self._rot.device)
+            _k = torch.empty((batch_size), dtype=torch.long).to(self._rot.device)
+
+            _i = _i[inv_boolean_map]
+            _j = _j[inv_boolean_map]
+            _k = _k[inv_boolean_map]
+            _M = M[inv_boolean_map]
+
+            _i[:] = 0
+            _j[:] = 1
+            _k[:] = 2
+
+            _b = _M[:, 1, 1] > _M[:, 0, 0]
+            _i[_b] = 1
+            _j[_b] = 2
+            _k[_b] = 0
+
+            _b = _M[:, 2, 2] > get_gathered_view(_M, _i, _i)
+            _i[_b] = 2
+            _j[_b] = 0
+            _k[_b] = 1
+
+            _t = get_gathered_view(_M, _i, _i) - (get_gathered_view(_M, _j, _j) + get_gathered_view(_M, _k, _k)) + _M[:, 3, 3]
+            _q2.scatter_(1, _i.unsqueeze(1), _t.unsqueeze(1))
+
+            to_be_applied = get_gathered_view(_M, _i, _j) + get_gathered_view(_M, _j, _i)
+            _q2.scatter_(1, _j.unsqueeze(1), to_be_applied.unsqueeze(1))
+
+            to_be_applied = get_gathered_view(_M, _k, _i) + get_gathered_view(_M, _i, _k)
+            _q2.scatter_(1, _k.unsqueeze(1), to_be_applied.unsqueeze(1))
+
+            _q2[:, 3] = get_gathered_view(_M, _k, _j) - get_gathered_view(_M, _j, _k)
+
+            # assign back to original container
+            q2[inv_boolean_map] = _q2
+            t[inv_boolean_map] = _t
+
+        ###########################################################
+        ###########################################################
+
+        q2[...] *= (0.5 / torch.sqrt(t * M[:, 3, 3])).unsqueeze(-1)
+
+        assert torch.allclose(q, q2), (q, q2, (q-q2).abs())
+
         return q
+
 
     def to_matrix(self):
         batch_size = self._rot.shape[0]
