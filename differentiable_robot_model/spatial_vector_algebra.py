@@ -111,33 +111,31 @@ class CoordinateTransform(object):
         M[:, :3, :3] = self._rot
         M[:, :3, 3] = self._trans
         M[:, 3, 3] = 1
-        q = torch.empty((batch_size, 4)).to(self._rot.device)
-        q = torch.zeros((batch_size, 4)).to(self._rot.device)
+        # q = torch.empty((batch_size, 4)).to(self._rot.device)
         t = torch.einsum("bii->b", M)  # torch.trace(M)
-        for n in range(batch_size):
-            tn = t[n]
-            if tn > M[n, 3, 3]:
-                q[n, 3] = tn
-                q[n, 2] = M[n, 1, 0] - M[n, 0, 1]
-                q[n, 1] = M[n, 0, 2] - M[n, 2, 0]
-                q[n, 0] = M[n, 2, 1] - M[n, 1, 2]
-            else:
-                i, j, k = 0, 1, 2
-                if M[n, 1, 1] > M[n, 0, 0]:
-                    i, j, k = 1, 2, 0
-                if M[n, 2, 2] > M[n, i, i]:
-                    i, j, k = 2, 0, 1
-                tn = M[n, i, i] - (M[n, j, j] + M[n, k, k]) + M[n, 3, 3]
-                q[n, i] = tn
-                q[n, j] = M[n, i, j] + M[n, j, i]
-                q[n, k] = M[n, k, i] + M[n, i, k]
-                q[n, 3] = M[n, k, j] - M[n, j, k]
-                # q = q[[3, 0, 1, 2]]
-            q[n, :] *= 0.5 / math.sqrt(tn * M[n, 3, 3])
+        # for n in range(batch_size):
+        #     tn = t[n]
+        #     if tn > M[n, 3, 3]:
+        #         q[n, 3] = tn
+        #         q[n, 2] = M[n, 1, 0] - M[n, 0, 1]
+        #         q[n, 1] = M[n, 0, 2] - M[n, 2, 0]
+        #         q[n, 0] = M[n, 2, 1] - M[n, 1, 2]
+        #     else:
+        #         i, j, k = 0, 1, 2
+        #         if M[n, 1, 1] > M[n, 0, 0]:
+        #             i, j, k = 1, 2, 0
+        #         if M[n, 2, 2] > M[n, i, i]:
+        #             i, j, k = 2, 0, 1
+        #         tn = M[n, i, i] - (M[n, j, j] + M[n, k, k]) + M[n, 3, 3]
+        #         q[n, i] = tn
+        #         q[n, j] = M[n, i, j] + M[n, j, i]
+        #         q[n, k] = M[n, k, i] + M[n, i, k]
+        #         q[n, 3] = M[n, k, j] - M[n, j, k]
+        #         # q = q[[3, 0, 1, 2]]
+        #     q[n, :] *= 0.5 / math.sqrt(tn * M[n, 3, 3])
 
 
         q2 = torch.empty((batch_size, 4)).to(self._rot.device)
-        q2 = torch.zeros((batch_size, 4)).to(self._rot.device)
 
         boolean_map = t > M[:, 3, 3]
         inv_boolean_map = ~boolean_map
@@ -209,9 +207,9 @@ class CoordinateTransform(object):
 
         q2[...] *= (0.5 / torch.sqrt(t * M[:, 3, 3])).unsqueeze(-1)
 
-        assert torch.allclose(q, q2), (q, q2, (q-q2).abs())
+        # assert torch.allclose(q, q2), (q, q2, (q-q2).abs())
 
-        return q
+        return q2
 
 
     def to_matrix(self):
