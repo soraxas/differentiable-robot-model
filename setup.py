@@ -23,13 +23,18 @@ DESC = (
     "and/or propagate gradients through analytical robot computations such as forward kinematics."
 )
 
-# resolve version
-latest_tag = (
-    subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"])
-    .decode("utf-8")
-    .strip("\n")
-)
-version_num = latest_tag.strip("v")
+try:
+    # resolve version
+    latest_tag = (
+        subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"])
+        .decode("utf-8")
+        .strip("\n")
+    )
+    version_num = latest_tag.strip("v")
+except subprocess.CalledProcessError:
+    # fallback
+    latest_tag = "git-tag"
+    version_num = "latest"
 
 branch_name = (
     subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
@@ -38,15 +43,8 @@ branch_name = (
 )
 branch_hash = abs(hash(branch_name)) % (10**4)
 
-rev_num = (
-    subprocess.check_output(["git", "rev-list", f"{latest_tag}..HEAD", "--count"])
-    .decode("utf-8")
-    .strip("\n")
-)
 
 VERSION = version_num
-if int(rev_num) > 0:
-    VERSION = f"{version_num}a{rev_num}.dev{branch_hash}"
 
 # resource files
 data_files = []
