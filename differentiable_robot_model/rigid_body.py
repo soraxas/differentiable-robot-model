@@ -39,6 +39,7 @@ class DifferentiableRigidBody(torch.nn.Module):
         self._device = torch.device(device)
         self.joint_id = rigid_body_params["joint_id"]
         self.name = rigid_body_params["link_name"]
+        self.joint_name = rigid_body_params["joint_name"]
 
         # parameters that can be made learnable
         self.inertia = DifferentiableSpatialRigidBodyInertia(
