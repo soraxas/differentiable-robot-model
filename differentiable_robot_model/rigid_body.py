@@ -30,7 +30,6 @@ class DifferentiableRigidBody(torch.nn.Module):
     _children: List["DifferentiableRigidBody"]
 
     def __init__(self, rigid_body_params, device="cpu"):
-
         super().__init__()
 
         self._parents = None
@@ -52,6 +51,7 @@ class DifferentiableRigidBody(torch.nn.Module):
 
         # local joint axis (w.r.t. joint coordinate frame):
         self.joint_axis = rigid_body_params["joint_axis"]
+        self.joint_type = rigid_body_params["joint_type"]
 
         self.joint_limits = rigid_body_params["joint_limits"]
 
@@ -74,6 +74,10 @@ class DifferentiableRigidBody(torch.nn.Module):
         self.acc = SpatialMotionVec(device=self._device)
 
         self.force = SpatialForceVec(device=self._device)
+
+    @property
+    def is_fixed(self):
+        return self.joint_type == "fixed"
 
     # Kinematic tree construction
     def set_parent(self, link: "DifferentiableRigidBody"):

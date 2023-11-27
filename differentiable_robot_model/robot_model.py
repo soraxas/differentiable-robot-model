@@ -119,7 +119,7 @@ class DifferentiableRobotModel(torch.nn.Module):
 
             # Joint properties
             body.joint_idx = None
-            if rigid_body_params["joint_type"] != "fixed":
+            if not body.is_fixed:
                 body.joint_idx = self._n_dofs
                 self._n_dofs += 1
                 self._controlled_joints.append(i)
@@ -733,7 +733,7 @@ class DifferentiableRobotModel(torch.nn.Module):
             link_names.append(self._bodies[i].name)
         return link_names
 
-    def get_joint_names(self) -> List[str]:
+    def get_joint_names(self, ignore_fixed: bool = True) -> List[str]:
         r"""
 
         Returns: a list containing names for all joints
@@ -741,8 +741,10 @@ class DifferentiableRobotModel(torch.nn.Module):
         """
 
         link_names = []
-        for i in range(len(self._bodies)):
-            link_names.append(self._bodies[i].joint_name)
+        for body in self._bodies:
+            if ignore_fixed and body.is_fixed:
+                continue
+            link_names.append(body.joint_name)
         return link_names
 
     def print_link_names(self) -> None:
