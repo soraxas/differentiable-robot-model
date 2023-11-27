@@ -134,7 +134,6 @@ class CoordinateTransform(object):
         #         # q = q[[3, 0, 1, 2]]
         #     q[n, :] *= 0.5 / math.sqrt(tn * M[n, 3, 3])
 
-
         q2 = torch.empty((batch_size, 4)).to(self._rot.device)
 
         boolean_map = t > M[:, 3, 3]
@@ -155,12 +154,11 @@ class CoordinateTransform(object):
                 a view of M with size [B] by indexing M
                 with A as index of dim=1, B as index of dim=2 at each Batch
             """
-            _A = A.view(-1,1).repeat(1, M.shape[2]).view(-1, 1, M.shape[2])
+            _A = A.view(-1, 1).repeat(1, M.shape[2]).view(-1, 1, M.shape[2])
             _M = M.gather(1, _A).squeeze(1)
             _B = B.view(-1, 1)
             _M = _M.gather(1, _B).squeeze(1)
             return _M
-
 
         _q2 = q2[inv_boolean_map]
         if _q2.shape[0] > 0:
@@ -187,13 +185,21 @@ class CoordinateTransform(object):
             _j[_b] = 0
             _k[_b] = 1
 
-            _t = get_gathered_view(_M, _i, _i) - (get_gathered_view(_M, _j, _j) + get_gathered_view(_M, _k, _k)) + _M[:, 3, 3]
+            _t = (
+                get_gathered_view(_M, _i, _i)
+                - (get_gathered_view(_M, _j, _j) + get_gathered_view(_M, _k, _k))
+                + _M[:, 3, 3]
+            )
             _q2.scatter_(1, _i.unsqueeze(1), _t.unsqueeze(1))
 
-            to_be_applied = get_gathered_view(_M, _i, _j) + get_gathered_view(_M, _j, _i)
+            to_be_applied = get_gathered_view(_M, _i, _j) + get_gathered_view(
+                _M, _j, _i
+            )
             _q2.scatter_(1, _j.unsqueeze(1), to_be_applied.unsqueeze(1))
 
-            to_be_applied = get_gathered_view(_M, _k, _i) + get_gathered_view(_M, _i, _k)
+            to_be_applied = get_gathered_view(_M, _k, _i) + get_gathered_view(
+                _M, _i, _k
+            )
             _q2.scatter_(1, _k.unsqueeze(1), to_be_applied.unsqueeze(1))
 
             _q2[:, 3] = get_gathered_view(_M, _k, _j) - get_gathered_view(_M, _j, _k)
@@ -210,7 +216,6 @@ class CoordinateTransform(object):
         # assert torch.allclose(q, q2), (q, q2, (q-q2).abs())
 
         return q2
-
 
     def to_matrix(self):
         batch_size = self._rot.shape[0]

@@ -48,7 +48,6 @@ class NMSELoss(torch.nn.Module):
 
 
 def run(n_epochs=100, n_data=10000, device="cpu"):
-
     """setup learnable robot model"""
 
     urdf_path = os.path.join(diff_robot_data.__path__[0], "kuka_iiwa/urdf/iiwa7.urdf")

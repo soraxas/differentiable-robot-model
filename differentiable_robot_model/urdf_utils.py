@@ -15,7 +15,7 @@ class URDFRobotModel(object):
         self._device = torch.device(device)
 
     def find_joint_of_body(self, body_name):
-        for (i, joint) in enumerate(self.robot.joints):
+        for i, joint in enumerate(self.robot.joints):
             if joint.child == body_name:
                 return i
         return -1

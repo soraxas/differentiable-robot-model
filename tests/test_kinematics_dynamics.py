@@ -204,6 +204,7 @@ def setup_dict(request, test_info, sim, robot_model, batch_shape):
 # Act
 ################
 
+
 # Helper functions
 def extract_setup_dict(setup_dict):
     robot_model = setup_dict["robot_model"]
