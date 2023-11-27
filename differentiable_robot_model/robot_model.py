@@ -92,7 +92,6 @@ class DifferentiableRobotModel(torch.nn.Module):
     """
 
     def __init__(self, urdf_path: str, name="", device=None):
-
         super().__init__()
 
         self.name = name
@@ -111,7 +110,7 @@ class DifferentiableRobotModel(torch.nn.Module):
         # joint is at the beginning of a link
         self._name_to_idx_map = dict()
 
-        for (i, link) in enumerate(self._urdf_model.robot.links):
+        for i, link in enumerate(self._urdf_model.robot.links):
             # Initialize body object
             rigid_body_params = self._urdf_model.get_body_parameters_from_urdf(i, link)
             body = DifferentiableRigidBody(
@@ -171,7 +170,6 @@ class DifferentiableRobotModel(torch.nn.Module):
 
         # propagate the new joint state through the kinematic chain to update bodies position/velocities
         for i in range(1, len(self._bodies)):
-
             body = self._bodies[i]
             parent_name = self._urdf_model.get_name_of_parent_body(body.name)
             # find the joint that has this link as child
@@ -733,6 +731,18 @@ class DifferentiableRobotModel(torch.nn.Module):
         link_names = []
         for i in range(len(self._bodies)):
             link_names.append(self._bodies[i].name)
+        return link_names
+
+    def get_joint_names(self) -> List[str]:
+        r"""
+
+        Returns: a list containing names for all joints
+
+        """
+
+        link_names = []
+        for i in range(len(self._bodies)):
+            link_names.append(self._bodies[i].joint_name)
         return link_names
 
     def print_link_names(self) -> None:
