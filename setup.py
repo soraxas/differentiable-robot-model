@@ -34,7 +34,22 @@ try:
 except subprocess.CalledProcessError:
     # fallback
     latest_tag = "git-tag"
-    version_num = "latest"
+"""
+              ********************************************************************************
+              Version 'latest' is not valid according to PEP 440.
+
+              Please make sure to specify a valid version for your package.
+              Also note that future releases of setuptools may halt the build process
+              if an invalid version is given.
+
+              This deprecation is overdue, please update your project and remove deprecated
+              calls to avoid build errors in the future.
+
+              See https://peps.python.org/pep-0440/ for details.
+              ********************************************************************************
+"""
+    # version_num = "latest"
+    version_num = "v0.0.1"
 
 branch_name = (
     subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
