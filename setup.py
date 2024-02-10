@@ -34,7 +34,7 @@ try:
 except subprocess.CalledProcessError:
     # fallback
     latest_tag = "git-tag"
-"""
+    """
               ********************************************************************************
               Version 'latest' is not valid according to PEP 440.
 
@@ -47,7 +47,7 @@ except subprocess.CalledProcessError:
 
               See https://peps.python.org/pep-0440/ for details.
               ********************************************************************************
-"""
+    """
     # version_num = "latest"
     version_num = "v0.0.1"
 
